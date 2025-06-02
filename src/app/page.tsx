@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
-  return <h1>Bootcamp!</h1>;
+  return <Button>Bootcamp!</Button>;
 }
