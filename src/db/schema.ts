@@ -10,7 +10,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const usersTables = pgTable("users", {
+/* USERS */
+export const usersTable = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
@@ -19,18 +20,19 @@ export const usersTables = pgTable("users", {
     .notNull(),
   image: text("image"),
   createdAt: timestamp("created_at")
-    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .$defaultFn(() => new Date())
     .notNull(),
   updatedAt: timestamp("updated_at")
-    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .$defaultFn(() => new Date())
     .notNull(),
 });
 
-export const usersTableRelations = relations(usersTables, ({ many }) => ({
+export const usersTableRelations = relations(usersTable, ({ many }) => ({
   usersToClinics: many(usersToClinicsTable),
 }));
 
-export const sessionsTables = pgTable("sessions_tables", {
+/* SESSIONS */
+export const sessionsTable = pgTable("sessions", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
@@ -40,16 +42,17 @@ export const sessionsTables = pgTable("sessions_tables", {
   userAgent: text("user_agent"),
   userId: text("user_id")
     .notNull()
-    .references(() => usersTables.id, { onDelete: "cascade" }),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
 });
 
-export const accountsTables = pgTable("accounts_tables", {
+/* ACCOUNTS */
+export const accountsTable = pgTable("accounts", {
   id: text("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
   userId: text("user_id")
     .notNull()
-    .references(() => usersTables.id, { onDelete: "cascade" }),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   idToken: text("id_token"),
@@ -61,19 +64,17 @@ export const accountsTables = pgTable("accounts_tables", {
   updatedAt: timestamp("updated_at").notNull(),
 });
 
-export const verificationsTables = pgTable("verifications_tables", {
+/* VERIFICATIONS */
+export const verificationsTable = pgTable("verifications", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
-  updatedAt: timestamp("updated_at").$defaultFn(
-    () => /* @__PURE__ */ new Date(),
-  ),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });
 
+/* CLINICS */
 export const clinicsTable = pgTable("clinics", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -83,10 +84,18 @@ export const clinicsTable = pgTable("clinics", {
     .$onUpdate(() => new Date()),
 });
 
+export const clinicsTableRelations = relations(clinicsTable, ({ many }) => ({
+  doctors: many(doctorsTable),
+  patients: many(patientsTable),
+  appointments: many(appointmentsTable),
+  usersToClinics: many(usersToClinicsTable),
+}));
+
+/* USERS_TO_CLINICS */
 export const usersToClinicsTable = pgTable("users_to_clinics", {
   userId: text("user_id")
     .notNull()
-    .references(() => usersTables.id),
+    .references(() => usersTable.id),
   clinicId: uuid("clinic_id")
     .notNull()
     .references(() => clinicsTable.id),
@@ -99,9 +108,9 @@ export const usersToClinicsTable = pgTable("users_to_clinics", {
 export const usersToClinicsTableRelations = relations(
   usersToClinicsTable,
   ({ one }) => ({
-    user: one(usersTables, {
+    user: one(usersTable, {
       fields: [usersToClinicsTable.userId],
-      references: [usersTables.id],
+      references: [usersTable.id],
     }),
     clinic: one(clinicsTable, {
       fields: [usersToClinicsTable.clinicId],
@@ -110,13 +119,7 @@ export const usersToClinicsTableRelations = relations(
   }),
 );
 
-export const clinicsTableRelations = relations(clinicsTable, ({ many }) => ({
-  doctors: many(doctorsTable),
-  patients: many(patientsTable),
-  appointments: many(appointmentsTable),
-  usersToClinics: many(usersToClinicsTable),
-}));
-
+/* DOCTORS */
 export const doctorsTable = pgTable("doctors", {
   id: uuid("id").defaultRandom().primaryKey(),
   clinicId: uuid("clinic_id")
@@ -124,7 +127,6 @@ export const doctorsTable = pgTable("doctors", {
     .references(() => clinicsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   avatarImageUrl: text("avatar_image_url"),
-  // 1 - Monday, 2 - Tuesday, 3 - Wednesday, 4 - Thursday, 5 - Friday, 6 - Saturday, 0 - Sunday
   availableFromWeekDay: integer("available_from_week_day").notNull(),
   availableToWeekDay: integer("available_to_week_day").notNull(),
   availableFromTime: time("available_from_time").notNull(),
@@ -139,7 +141,7 @@ export const doctorsTable = pgTable("doctors", {
 
 export const doctorsTableRelations = relations(
   doctorsTable,
-  ({ many, one }) => ({
+  ({ one, many }) => ({
     clinic: one(clinicsTable, {
       fields: [doctorsTable.clinicId],
       references: [clinicsTable.id],
@@ -148,6 +150,7 @@ export const doctorsTableRelations = relations(
   }),
 );
 
+/* PATIENTS */
 export const patientSexEnum = pgEnum("patient_sex", ["male", "female"]);
 
 export const patientsTable = pgTable("patients", {
@@ -176,6 +179,7 @@ export const patientsTableRelations = relations(
   }),
 );
 
+/* APPOINTMENTS */
 export const appointmentsTable = pgTable("appointments", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: timestamp("date").notNull(),
