@@ -8,9 +8,11 @@ import * as schema from "@/db/schema";
 import { usersToClinicsTable } from "@/db/schema";
 
 export const auth = betterAuth({
+  emailAndPassword: {
+    enabled: true,
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
-    usePlural: true,
     schema,
   }),
   socialProviders: {
@@ -27,15 +29,15 @@ export const auth = betterAuth({
           clinic: true,
         },
       });
-      // TODO: Ao adaptar para o usuário ter múltiplas clínicas, deve-se mudar esse código
+
       const clinic = clinics?.[0];
       return {
         user: {
           ...user,
           clinic: clinic?.clinicId
             ? {
-                id: clinic?.clinicId,
-                name: clinic?.clinic?.name,
+                id: clinic.clinicId,
+                name: clinic.clinic?.name,
               }
             : undefined,
         },
@@ -54,8 +56,5 @@ export const auth = betterAuth({
   },
   verification: {
     modelName: "verificationsTable",
-  },
-  emailAndPassword: {
-    enabled: true,
   },
 });
