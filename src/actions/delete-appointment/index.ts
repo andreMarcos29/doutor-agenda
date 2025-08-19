@@ -6,11 +6,11 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { appointmentsTable } from "@/db/schema";
+import { doctorsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { actionClient } from "@/lib/next-safe-action";
 
-export const deleteAppointment = actionClient
+export const deleteDoctor = actionClient
   .schema(
     z.object({
       id: z.string().uuid(),
@@ -23,17 +23,15 @@ export const deleteAppointment = actionClient
     if (!session?.user) {
       throw new Error("Unauthorized");
     }
-    const appointment = await db.query.appointmentsTable.findFirst({
-      where: eq(appointmentsTable.id, parsedInput.id),
+    const doctor = await db.query.doctorsTable.findFirst({
+      where: eq(doctorsTable.id, parsedInput.id),
     });
-    if (!appointment) {
-      throw new Error("Agendamento não encontrado");
+    if (!doctor) {
+      throw new Error("Médico não encontrado");
     }
-    if (appointment.clinicId !== session.user.clinic?.id) {
-      throw new Error("Agendamento não encontrado");
+    if (doctor.clinicId !== session.user.clinic?.id) {
+      throw new Error("Médico não encontrado");
     }
-    await db
-      .delete(appointmentsTable)
-      .where(eq(appointmentsTable.id, parsedInput.id));
-    revalidatePath("/appointments");
+    await db.delete(doctorsTable).where(eq(doctorsTable.id, parsedInput.id));
+    revalidatePath("/doctors");
   });
