@@ -1,18 +1,13 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { customSession } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { usersToClinicsTable } from "@/db/schema";
 
 export const auth = betterAuth({
-  emailAndPassword: {
-    enabled: true,
-  },
   database: drizzleAdapter(db, {
     provider: "pg",
+    usePlural: true,
     schema,
   }),
   socialProviders: {
@@ -21,32 +16,25 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  plugins: [
-    customSession(async ({ user, session }) => {
-      const clinics = await db.query.usersToClinicsTable.findMany({
-        where: eq(usersToClinicsTable.userId, user.id),
-        with: {
-          clinic: true,
-        },
-      });
-
-      const clinic = clinics?.[0];
-      return {
-        user: {
-          ...user,
-          clinic: clinic?.clinicId
-            ? {
-                id: clinic.clinicId,
-                name: clinic.clinic?.name,
-              }
-            : undefined,
-        },
-        session,
-      };
-    }),
-  ],
   user: {
     modelName: "usersTable",
+    additionalFields: {
+      stripeCustomerId: {
+        type: "string",
+        fieldName: "stripeCustomerId",
+        required: false,
+      },
+      stripeSubscriptionId: {
+        type: "string",
+        fieldName: "stripeSubscriptionId",
+        required: false,
+      },
+      plan: {
+        type: "string",
+        fieldName: "plan",
+        required: false,
+      },
+    },
   },
   session: {
     modelName: "sessionsTable",
@@ -56,5 +44,8 @@ export const auth = betterAuth({
   },
   verification: {
     modelName: "verificationsTable",
+  },
+  emailAndPassword: {
+    enabled: true,
   },
 });
